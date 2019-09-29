@@ -1,0 +1,128 @@
+version: "2.2"
+services:
+
+  es-master01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.3.1
+    container_name: es-master01
+    environment:
+      - cluster.name=my-app
+      - node.name=es-master01
+
+      - node.master=true
+      - node.voting_only=false
+      - node.data=false
+      - node.ingest=false
+      - node.ml=false
+      - xpack.ml.enabled=false
+      - cluster.remote.connect=false
+
+      - network.host=0.0.0.0
+
+      - discovery.seed_hosts=es-master02,es-master03
+      - cluster.initial_master_nodes=es-master01,es-master02,es-master03
+
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"      
+
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+    volumes:
+      - ./data:/data
+
+      # elasticsearch data
+      - /esdata/master01:/usr/share/elasticsearch/data
+      - /eslogs/master01:/usr/share/elasticsearch/logs
+
+    networks:
+      - esnet
+
+  es-data01-01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.3.1
+    container_name: es-data01-01
+    environment:
+      - cluster.name=my-app
+      - node.name=es-data01-01
+
+      - node.master=false
+      - node.voting_only=false 
+      - node.data=true 
+      - node.ingest=false 
+      - node.ml=false 
+      - xpack.ml.enabled=false
+      - cluster.remote.connect=false 
+
+      - network.host=0.0.0.0
+      - http.port=9201
+
+      - discovery.seed_hosts=es-master01,es-master02,es-master03
+      - cluster.initial_master_nodes=es-master01,es-master02,es-master03
+
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"      
+
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+    ports:
+      - "9201:9201"
+
+    volumes:
+      - ./data:/data
+
+      # elasticsearch data
+      - /esdata/data01-01:/usr/share/elasticsearch/data
+      - /eslogs/data01-01:/usr/share/elasticsearch/logs
+
+    networks:
+      - esnet
+
+  es-data01-02:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.3.1
+    container_name: es-data01-02
+    environment:
+      - cluster.name=my-app
+      - node.name=es-data01-02
+
+      - node.master=false
+      - node.voting_only=false 
+      - node.data=true 
+      - node.ingest=false 
+      - node.ml=false 
+      - xpack.ml.enabled=false
+      - cluster.remote.connect=false 
+
+      - network.host=0.0.0.0
+      - http.port=9202
+
+      - discovery.seed_hosts=es-master01,es-master02,es-master03
+      - cluster.initial_master_nodes=es-master01,es-master02,es-master03
+
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"      
+
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+    ports:
+      - "9202:9202"
+
+    volumes:
+      - ./data:/data
+
+      # elasticsearch data
+      - /esdata/data01-02:/usr/share/elasticsearch/data
+      - /eslogs/data01-02:/usr/share/elasticsearch/logs
+
+    networks:
+      - esnet
+
+networks:
+  esnet:
+    driver: overlay
