@@ -10,10 +10,13 @@ AWS EC2インスタンス3台（r5a.largeインスタンス）
 | 192.168.0.28 | `etcd03`              |
 
 ##  etcd インストール
+```
 sudo yum install -y etcd &&
 sudo sh -c "[ -f /etc/etcd/etcd.conf.orig ] || mv /etc/etcd/etcd.conf{,.orig}"
+```
 
 ### No.1
+```
 sudo sh -c "cat <<EOF > /etc/etcd/etcd.conf 
 ETCD_DATA_DIR="/var/lib/etcd/default.etcd"
 ETCD_NAME="etcd01"
@@ -25,8 +28,10 @@ ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster"
 ETCD_INITIAL_CLUSTER="etcd01=http://192.168.0.7:2380,etcd02=http://192.168.0.24:2380,etcd03=http://192.168.0.28:2380"
 ETCD_INITIAL_CLUSTER_STATE="new"
 EOF"
+```
 
 ### No.2
+```
 sudo sh -c "cat <<EOF > /etc/etcd/etcd.conf 
 ETCD_DATA_DIR="/var/lib/etcd/default.etcd"
 ETCD_NAME="etcd02"
@@ -38,8 +43,10 @@ ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster"
 ETCD_INITIAL_CLUSTER="etcd01=http://192.168.0.7:2380,etcd02=http://192.168.0.24:2380,etcd03=http://192.168.0.28:2380"
 ETCD_INITIAL_CLUSTER_STATE="new"
 EOF"
+```
 
 ### No.3
+```
 sudo sh -c "cat <<EOF > /etc/etcd/etcd.conf 
 ETCD_DATA_DIR="/var/lib/etcd/default.etcd"
 ETCD_NAME="etcd03"
@@ -51,74 +58,101 @@ ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster"
 ETCD_INITIAL_CLUSTER="etcd01=http://192.168.0.7:2380,etcd02=http://192.168.0.24:2380,etcd03=http://192.168.0.28:2380"
 ETCD_INITIAL_CLUSTER_STATE="new"
 EOF"
+```
 
 ### End every host settings
 
+```
 SERVICE_FILE=/usr/lib/systemd/system/etcd.service &&
 sudo sh -c "[ -f ${SERVICE_FILE}.orig ] || cp -p ${SERVICE_FILE}{,.orig}" &&
 sudo sed -i -e 's@^ExecStart.\+$@ExecStart=/bin/bash -c "GOMAXPROCS=$(nproc) /usr/bin/etcd"@' ${SERVICE_FILE} &&
 sudo systemctl enable etcd &&
 sudo systemctl start etcd &&
 unset SERVICE_FILE
+```
 
 
 ## docker インストール
+```
 sudo yum install -y yum-utils device-mapper-persistent-data lvm2 &&
 sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo &&
 sudo yum install -y docker-ce docker-ce-cli containerd.io &&
 sudo usermod -aG docker centos
+```
 
+```
 SERVICE_FILE=/usr/lib/systemd/system/docker.service &&
 sudo sh -c "[ -f ${SERVICE_FILE}.orig ] || cp -p ${SERVICE_FILE}{,.orig}"
+```
 
 ### No.1
+```
 sudo sed -i -e 's@^ExecStart.\+$@ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock -H fd:// --cluster-store=etcd://192.168.0.7:2379 --cluster-store=etcd://192.168.0.24:2379 --cluster-store=etcd://192.168.0.28:2379 --cluster-advertise=192.168.0.7:2375 --containerd=/run/containerd/containerd.sock@' ${SERVICE_FILE}
+```
 
 ### No.2
+```
 sudo sed -i -e 's@^ExecStart.\+$@ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock -H fd:// --cluster-store=etcd://192.168.0.7:2379 --cluster-store=etcd://192.168.0.24:2379 --cluster-store=etcd://192.168.0.28:2379 --cluster-advertise=192.168.0.24:2375 --containerd=/run/containerd/containerd.sock@' ${SERVICE_FILE}
+```
 
 ### No.3
+```
 sudo sed -i -e 's@^ExecStart.\+$@ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock -H fd:// --cluster-store=etcd://192.168.0.7:2379 --cluster-store=etcd://192.168.0.24:2379 --cluster-store=etcd://192.168.0.28:2379 --cluster-advertise=192.168.0.28:2375 --containerd=/run/containerd/containerd.sock@' ${SERVICE_FILE}
+```
 
 ### End every host settings
 
+```
 unset SERVICE_FILE &&
 sudo systemctl enable docker &&
 sudo systemctl start docker
+```
 
 
 ## docker-compose インストール
+```
 curl -L https://github.com/docker/compose/releases/download/1.24.1/docker-compose-Linux-x86_64 > docker-compose &&
 chmod 555 docker-compose &&
 sudo mv docker-compose /usr/local/bin
+```
 
 
 ## elasticsearch関連設定
 ### No.1
+```
 sudo mkdir -p   /{esdata,eslogs}/{master01,data01-01,data01-02} &&
 sudo chmod 777  /{esdata,eslogs}/{master01,data01-01,data01-02} &&
 sudo chgrp 1000 /{esdata,eslogs}/{master01,data01-01,data01-02}
+```
 
 ### No.2
+```
 sudo mkdir -p   /{esdata,eslogs}/{master02,data02-01,data02-02} &&
 sudo chmod 777  /{esdata,eslogs}/{master02,data02-01,data02-02} &&
 sudo chgrp 1000 /{esdata,eslogs}/{master02,data02-01,data02-02}
+```
 
 ### No.3
+```
 sudo mkdir -p   /{esdata,eslogs}/master03 &&
 sudo chmod 777  /{esdata,eslogs}/master03 &&
 sudo chgrp 1000 /{esdata,eslogs}/master03
+```
 
 ### End every host settings
 
+```
 sudo -c "echo 'vm.max_map_count=262144' >> /etc/sysctl.conf" &&
 sudo sysctl -p
+```
 
 
 ## クリンナップ＆再起動
+```
 docker-compose down
 rm -rf /{esdata,eslogs}/*/*
 docker-compose up -d
+```
 
 ## 参考文献
 
